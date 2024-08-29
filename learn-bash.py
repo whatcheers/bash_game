@@ -1,108 +1,125 @@
 import random
+from colorama import Fore, Style, init
+import time
+import os
+from level1_questions import level1_questions
+from level2_questions import level2_questions
+from level3_questions import level3_questions
 
-# Define game scenarios and commands for each level
-levels = {
-    1: {
-        "category": "File Management",
-        "description": "Level 1: Learn to manage files and directories.",
-        "tasks": [
-            {"description": "List all files in the current directory.", "command": "ls"},
-            {"description": "Create a directory named 'test'.", "command": "mkdir test"},
-            {"description": "Remove the directory named 'test'.", "command": "rmdir test"},
-        ],
-        "quiz": [
-            {"question": "What command lists files in a directory?", "options": ["ls", "cd", "pwd"], "answer": "ls"},
-            {"question": "How do you create a new directory?", "options": ["mkdir", "rmdir", "touch"], "answer": "mkdir"},
-        ]
-    },
-    2: {
-        "category": "System Information",
-        "description": "Level 2: Learn commands to check system information.",
-        "tasks": [
-            {"description": "Display the system's kernel version.", "command": "uname -r"},
-            {"description": "Show disk usage in human-readable format.", "command": "df -h"},
-        ],
-        "quiz": [
-            {"question": "Which command displays the kernel version?", "options": ["uname -r", "ls", "df -h"], "answer": "uname -r"},
-            {"question": "How do you check disk usage?", "options": ["free -h", "df -h", "du"], "answer": "df -h"},
-        ]
-    },
-    # Add more levels as needed
-}
+# Initialize colorama
+init(autoreset=True)
 
-# Initialize player points and current level
-player_points = 0
-current_level = 1
+# Check if we're on Windows
+is_windows = os.name == 'nt'
 
-def display_scenario(level):
-    """Display the level description and tasks."""
-    print("\n" + levels[level]["description"])
-    tasks = levels[level]["tasks"]
-    return tasks
+if is_windows:
+    import winsound
 
-def get_user_command(task):
-    """Prompt user for input based on task."""
-    print("\nTask: " + task["description"])
-    return input("> ")
+def beep(frequency, duration):
+    """
+    Play a beep sound.
+    On Windows, use winsound. On other systems, print a "beep" message.
+    """
+    if is_windows:
+        winsound.Beep(frequency, duration)
+    else:
+        print(f"{Fore.YELLOW}BEEP! (Frequency: {frequency}, Duration: {duration}){Style.RESET_ALL}")
+        time.sleep(duration / 1000)  # Sleep for the duration in seconds
 
-def validate_command(user_command, correct_command):
-    """Check if the user input matches the correct command."""
-    return user_command.strip() == correct_command.strip()
+def correct_sound():
+    """Play a sequence of beeps for a correct answer."""
+    beep(440, 100)  # A4
+    time.sleep(0.05)
+    beep(554, 100)  # C#5
+    time.sleep(0.05)
+    beep(659, 200)  # E5
 
-def conduct_quiz(level):
-    """Conduct a quiz based on the completed level."""
-    quiz_questions = levels[level]["quiz"]
-    quiz_score = 0
-    print("\nQuiz Time! Answer the following questions:")
+def incorrect_sound():
+    """Play a sequence of beeps for an incorrect answer."""
+    beep(392, 200)  # G4
+    time.sleep(0.05)
+    beep(349, 400)  # F4
 
-    for question in quiz_questions:
-        print("\n" + question["question"])
-        for i, option in enumerate(question["options"], 1):
-            print(f"{i}. {option}")
-        answer = input("Your answer (number): ")
+def level_complete_sound():
+    """Play a triumphant sequence of beeps for completing a level."""
+    beep(523, 100)  # C5
+    time.sleep(0.05)
+    beep(659, 100)  # E5
+    time.sleep(0.05)
+    beep(784, 100)  # G5
+    time.sleep(0.05)
+    beep(1046, 400)  # C6
 
-        # Validate answer
-        if question["options"][int(answer) - 1] == question["answer"]:
-            print("Correct!")
-            quiz_score += 1
-        else:
-            print(f"Incorrect. The correct answer is '{question['answer']}'.")
-    
-    return quiz_score
+def calculate_points(start_time, is_correct):
+    if not is_correct:
+        return -10
+    elapsed_time = min(time.time() - start_time, 3)
+    return max(int(10 + (3 - elapsed_time) * 5), 10)  # Ensure minimum 10 points for correct answers
+
+def display_question(question):
+    print(f"\n{Fore.CYAN}{question['question']}{Style.RESET_ALL}")
+    options = question['options'].copy()
+    random.shuffle(options)
+    for i, option in enumerate(options, 1):
+        print(f"{i}. {option}")
+    return options
+
+def get_user_answer():
+    return input(f"{Fore.YELLOW}Your answer (number): {Style.RESET_ALL}")
+
+def validate_answer(user_answer, correct_answer, options):
+    try:
+        return options[int(user_answer) - 1] == correct_answer
+    except (ValueError, IndexError):
+        return False
 
 def main():
-    global player_points, current_level
-    
-    print("Welcome to Bash Mastery Adventure! Learn Bash commands to advance through different levels.")
-    
+    player_points = 0
+    current_level = 1
+    levels = {
+        1: {"questions": level1_questions, "description": "Level 1: Basic Commands"},
+        2: {"questions": level2_questions, "description": "Level 2: Intermediate Commands"},
+        3: {"questions": level3_questions, "description": "Level 3: Advanced Commands"}
+    }
+
+    print(f"{Fore.GREEN}Welcome to Bash Mastery Quiz! Test your knowledge of Bash commands.{Style.RESET_ALL}")
+    correct_sound()
+
     while current_level in levels:
-        # Display the current level and its tasks
-        tasks = display_scenario(current_level)
-        for task in tasks:
-            while True:
-                user_command = get_user_command(task)
-                if validate_command(user_command, task["command"]):
-                    print("Correct!")
-                    player_points += 10  # Add points for correct task
-                    break
-                else:
-                    print("Incorrect. Try again or type 'hint' for a clue.")
-                    if user_command.lower() == 'hint':
-                        print(f"Hint: The command starts with '{task['command'].split()[0]}'.")
+        print(f"\n{Fore.MAGENTA}{levels[current_level]['description']}{Style.RESET_ALL}")
+        
+        for question in levels[current_level]['questions']:
+            options = display_question(question)
+            start_time = time.time()
+            user_answer = get_user_answer()
+            
+            if validate_answer(user_answer, question['answer'], options):
+                points = calculate_points(start_time, True)
+                player_points += points
+                print(f"{Fore.GREEN}Correct! You earned {points} points.{Style.RESET_ALL}")
+                correct_sound()
+                print(f"{Fore.BLUE}Explanation: {question['explanation']}{Style.RESET_ALL}")
+            else:
+                points = calculate_points(start_time, False)
+                player_points += points
+                print(f"{Fore.RED}Incorrect. You lost {abs(points)} points.{Style.RESET_ALL}")
+                incorrect_sound()
+                print(f"{Fore.BLUE}Explanation: {question['explanation']}{Style.RESET_ALL}")
+            
+            print(f"Current score: {player_points}")
 
-        # Conduct quiz after completing the tasks of the current level
-        quiz_score = conduct_quiz(current_level)
-        player_points += quiz_score * 10  # Add points for correct quiz answers
-
-        # Check if player can advance to the next level
-        print(f"\nLevel {current_level} Complete! You have {player_points} points.")
-        if player_points >= current_level * 20:  # Points required to advance increase with level
-            print(f"Congratulations! You've advanced to Level {current_level + 1}.\n")
+        print(f"\n{Fore.YELLOW}Level {current_level} Complete! You have {player_points} points.{Style.RESET_ALL}")
+        level_complete_sound()
+        
+        if player_points >= current_level * 70:
+            print(f"{Fore.GREEN}Congratulations! You've advanced to Level {current_level + 1}.{Style.RESET_ALL}\n")
             current_level += 1
         else:
-            print("You need more points to advance to the next level. Try the quiz again.")
-    
-    print("\nCongratulations! You've completed all levels of Bash Mastery Adventure and learned essential Bash commands!")
+            print(f"{Fore.RED}You need more points to advance. Try this level again.{Style.RESET_ALL}")
+            player_points = (current_level - 1) * 70
+
+    print(f"\n{Fore.GREEN}Congratulations! You've completed all levels of Bash Mastery Quiz!{Style.RESET_ALL}")
+    level_complete_sound()
 
 if __name__ == "__main__":
     main()
