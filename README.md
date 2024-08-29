@@ -36,5 +36,5 @@ Welcome to **Bash Mastery Adventure**, a game designed for those who want to lea
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/yourusername/bash-mastery-adventure.git
+   git clone https://github.com/whatcheers/bash_game.git
    cd bash-mastery-adventure
